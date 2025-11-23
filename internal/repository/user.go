@@ -1,8 +1,11 @@
 package repository
 
 import (
+	"avito-test-assignment/internal/apperrors"
 	"context"
+	"errors"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"avito-test-assignment/internal/model"
@@ -78,4 +81,51 @@ func (r *UserRepository) SelectUsersByTeamID(ctx context.Context, ext RepoExtens
 	}
 
 	return users, nil
+}
+
+func (r *UserRepository) SelectUserByID(ctx context.Context, ext RepoExtension, userID string) (*model.User, error) {
+	if ext == nil {
+		ext = r.db
+	}
+
+	const query = `
+		SELECT u.id, u.username, u.is_active, u.created_at, u.updated_at 
+		FROM users u
+		WHERE u.id = $1;
+	`
+
+	var user model.User
+
+	if err := ext.QueryRow(ctx, query, userID).Scan(&user.ID, &user.Username, &user.IsActive, &user.CreatedAt, &user.UpdatedAt); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, apperrors.ErrUserNotExist
+		}
+
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func (r *UserRepository) UpdateUserActive(ctx context.Context, ext RepoExtension, userID string, isActive bool) error {
+	if ext == nil {
+		ext = r.db
+	}
+
+	const query = `
+		Update users 
+		SET is_active = $1
+		WHERE id = $2;
+	`
+
+	cmd, err := ext.Exec(ctx, query, isActive, userID)
+	if err != nil {
+		return err
+	}
+
+	if cmd.RowsAffected() == 0 {
+		return apperrors.ErrUserNotExist
+	}
+
+	return nil
 }

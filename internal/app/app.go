@@ -28,10 +28,12 @@ type Repository struct {
 
 type Service struct {
 	TeamSvc *service.TeamService
+	UserSvc *service.UserService
 }
 
 type Handler struct {
 	TeamHdl *handler.TeamHandler
+	UserHdl *handler.UserHandler
 }
 
 func New(l *zap.Logger, cfg *config.Config) (*App, error) {
@@ -141,8 +143,13 @@ func initService(l *zap.Logger, repo *Repository) *Service {
 
 	l.Debug("Team service initialized")
 
+	userSvc := service.NewUserService(repo.TeamRepo, repo.UserRepo)
+
+	l.Debug("User service initialized")
+
 	return &Service{
 		TeamSvc: teamSvc,
+		UserSvc: userSvc,
 	}
 }
 
@@ -150,13 +157,18 @@ func initHandler(l *zap.Logger, svc *Service) *Handler {
 	teamHdl := handler.NewTeamHandler(l, svc.TeamSvc)
 	l.Debug("Team handler initialized")
 
+	userHdl := handler.NewUserHandler(l, svc.UserSvc)
+
+	l.Debug("User handler initialized")
+
 	return &Handler{
 		TeamHdl: teamHdl,
+		UserHdl: userHdl,
 	}
 }
 
 func initHTTPServer(l *zap.Logger, cfg *config.Config, hdl *Handler) server.HTTPServer {
-	router := route.SetupRouter(l, cfg, hdl.TeamHdl)
+	router := route.SetupRouter(l, cfg, hdl.TeamHdl, hdl.UserHdl)
 
 	httpServer := server.NewHTTPServer(
 		server.WithAddr(cfg.HTTPServer.Host, cfg.HTTPServer.Port),

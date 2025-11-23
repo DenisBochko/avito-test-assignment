@@ -1,0 +1,73 @@
+package service
+
+import (
+	"avito-test-assignment/internal/model"
+	"avito-test-assignment/internal/repository"
+	"context"
+	"fmt"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+)
+
+type TeamRepositoryForUser interface {
+	Pool() *pgxpool.Pool
+
+	SelectTeamNameByUserID(ctx context.Context, ext repository.RepoExtension, userID string) (string, error)
+}
+
+type UserRepositoryForUser interface {
+	UpdateUserActive(ctx context.Context, ext repository.RepoExtension, userID string, isActive bool) error
+	SelectUserByID(ctx context.Context, ext repository.RepoExtension, userID string) (*model.User, error)
+}
+
+type UserService struct {
+	teamRepo TeamRepositoryForUser
+	userRepo UserRepositoryForUser
+}
+
+func NewUserService(teamRepo TeamRepositoryForUser, userRepo UserRepositoryForUser) *UserService {
+	return &UserService{
+		teamRepo: teamRepo,
+		userRepo: userRepo,
+	}
+}
+
+func (s *UserService) SetIsActive(ctx context.Context, userID string, isActive bool) (user *model.UserResponseWithTeamName, err error) {
+	tx, err := s.teamRepo.Pool().Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	defer func() {
+		if err != nil {
+			if rErr := tx.Rollback(ctx); rErr != nil {
+				err = fmt.Errorf("%w, failed to rollback: %w", err, rErr)
+			}
+		}
+	}()
+
+	if err := s.userRepo.UpdateUserActive(ctx, tx, userID, isActive); err != nil {
+		return nil, fmt.Errorf("failed to update user active: %w", err)
+	}
+
+	teamName, err := s.teamRepo.SelectTeamNameByUserID(ctx, tx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to select team name: %w", err)
+	}
+
+	userFull, err := s.userRepo.SelectUserByID(ctx, tx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to select user: %w", err)
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return &model.UserResponseWithTeamName{
+		TeamName: teamName,
+		UserID:   userFull.ID,
+		Username: userFull.Username,
+		IsActive: userFull.IsActive,
+	}, nil
+}

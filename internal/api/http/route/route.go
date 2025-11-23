@@ -15,6 +15,7 @@ func SetupRouter(
 	l *zap.Logger,
 	cfg *config.Config,
 	teamHdl *handler.TeamHandler,
+	userHdl *handler.UserHandler,
 ) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	gin.DefaultWriter = io.Discard
@@ -32,6 +33,9 @@ func SetupRouter(
 
 	teamGroup := basePath.Group("/team")
 	RegisterTeamRoutes(teamGroup, teamHdl)
+
+	usersGroup := basePath.Group("/users")
+	RegisterUsersRoutes(usersGroup, userHdl)
 
 	return router
 }

@@ -88,3 +88,29 @@ func (r *TeamRepository) InsertTeamLinkWithUser(ctx context.Context, ext RepoExt
 
 	return nil
 }
+
+func (r *TeamRepository) SelectTeamNameByUserID(ctx context.Context, ext RepoExtension, userID string) (string, error) {
+	if ext == nil {
+		ext = r.db
+	}
+
+	const query = `
+		SELECT t.team_name
+		FROM teams t
+		JOIN team_lnk tl ON t.id = tl.team_id
+		WHERE tl.user_id = $1;
+
+	`
+
+	var teamName string
+
+	if err := ext.QueryRow(ctx, query, userID).Scan(&teamName); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", apperrors.ErrTeamNotExist
+		}
+
+		return "", err
+	}
+
+	return teamName, nil
+}

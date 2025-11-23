@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"avito-test-assignment/internal/model"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -22,6 +23,10 @@ type ResponseError struct {
 type ResponseWithMessage struct {
 	Status  string `json:"status"`
 	Message string `son:"message"`
+}
+
+type ResponseWithUser struct {
+	User *model.UserResponseWithTeamName `json:"user"`
 }
 
 func NoMethod(c *gin.Context) {

@@ -10,7 +10,7 @@ import (
 	"avito-test-assignment/internal/repository"
 )
 
-type TeamRepository interface {
+type TeamRepositoryForTeam interface {
 	Pool() *pgxpool.Pool
 
 	InsertTeam(ctx context.Context, ext repository.RepoExtension, teamName string) (int, error)
@@ -18,17 +18,17 @@ type TeamRepository interface {
 	InsertTeamLinkWithUser(ctx context.Context, ext repository.RepoExtension, teamID int, userID string) error
 }
 
-type UserRepository interface {
+type UserRepositoryForTeam interface {
 	UpsertUser(ctx context.Context, ext repository.RepoExtension, userID string, username string, isActive bool) error
 	SelectUsersByTeamID(ctx context.Context, ext repository.RepoExtension, teamID int) ([]model.User, error)
 }
 
 type TeamService struct {
-	teamRepo TeamRepository
-	userRepo UserRepository
+	teamRepo TeamRepositoryForTeam
+	userRepo UserRepositoryForTeam
 }
 
-func NewTeamService(teamRepo TeamRepository, userRepo UserRepository) *TeamService {
+func NewTeamService(teamRepo TeamRepositoryForTeam, userRepo UserRepositoryForTeam) *TeamService {
 	return &TeamService{
 		teamRepo: teamRepo,
 		userRepo: userRepo,
