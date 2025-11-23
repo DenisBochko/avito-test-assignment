@@ -21,7 +21,7 @@ func SetupRouter(
 	router := gin.Default()
 
 	router.Use(middleware.Logger(l))
-	router.Use(middleware.RequestTimeout(cfg.HTTPServer.Timeout.Request))
+	router.Use(middleware.RequestTimeout(cfg.Timeout.Request))
 
 	router.HandleMethodNotAllowed = true
 	router.NoMethod(handler.NoMethod)

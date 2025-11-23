@@ -23,25 +23,6 @@ func (r *TeamRepository) Pool() *pgxpool.Pool {
 	return r.db
 }
 
-//dbfunc (r *TeamRepository) SelectTeamIDByName(ctx context.Context, ext RepoExtension, teamName string) (int error) {
-//	if ext == nil {
-//		ext = r.db
-//	}
-//
-//	var id int
-//
-//	const query = `
-//		SELECT id FROM teams WHERE team_name = $1;
-//	`
-//
-//	if err := ext.QueryRow(ctx, query, teamName).Scan(&id); err != nil {
-//		if errors.Is(err, pgx.ErrNoRows) {
-//			return
-//		}
-//	}
-//
-//}
-
 func (r *TeamRepository) InsertTeam(ctx context.Context, ext RepoExtension, teamName string) (int, error) {
 	if ext == nil {
 		ext = r.db
@@ -88,4 +69,22 @@ func (r *TeamRepository) SelectTeamIDByName(ctx context.Context, ext RepoExtensi
 	}
 
 	return id, nil
+}
+
+func (r *TeamRepository) InsertTeamLinkWithUser(ctx context.Context, ext RepoExtension, teamID int, userID string) error {
+	if ext == nil {
+		ext = r.db
+	}
+
+	const query = `
+		INSERT INTO team_lnk (user_id, team_id)
+		VALUES ($1, $2)
+	`
+
+	_, err := ext.Exec(ctx, query, userID, teamID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

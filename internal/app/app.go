@@ -164,7 +164,7 @@ func initHTTPServer(l *zap.Logger, cfg *config.Config, hdl *Handler) server.HTTP
 
 	httpServer := server.NewHTTPServer(
 		server.WithAddr(cfg.HTTPServer.Host, cfg.HTTPServer.Port),
-		server.WithTimeout(cfg.HTTPServer.Timeout.Read, cfg.HTTPServer.Timeout.Write, cfg.HTTPServer.Timeout.Idle),
+		server.WithTimeout(cfg.Timeout.Read, cfg.Timeout.Write, cfg.Timeout.Idle),
 		server.WithHandler(router),
 	)
 

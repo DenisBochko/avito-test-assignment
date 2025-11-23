@@ -13,7 +13,6 @@ type UserRequest struct {
 type User struct {
 	ID        string
 	Username  string
-	TeamID    int
 	IsActive  bool
 	CreatedAt time.Time
 	UpdatedAt time.Time

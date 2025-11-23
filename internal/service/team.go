@@ -15,10 +15,11 @@ type TeamRepository interface {
 
 	InsertTeam(ctx context.Context, ext repository.RepoExtension, teamName string) (int, error)
 	SelectTeamIDByName(ctx context.Context, ext repository.RepoExtension, teamName string) (int, error)
+	InsertTeamLinkWithUser(ctx context.Context, ext repository.RepoExtension, teamID int, userID string) error
 }
 
 type UserRepository interface {
-	UpsertUser(ctx context.Context, ext repository.RepoExtension, userID string, username string, isActive bool, teamID int) error
+	UpsertUser(ctx context.Context, ext repository.RepoExtension, userID string, username string, isActive bool) error
 	SelectUsersByTeamID(ctx context.Context, ext repository.RepoExtension, teamID int) ([]model.User, error)
 }
 
@@ -54,8 +55,12 @@ func (s TeamService) AddTeam(ctx context.Context, teamName string, members []mod
 	}
 
 	for _, user := range members {
-		if err = s.userRepo.UpsertUser(ctx, tx, user.UserID, user.Username, user.IsActive, teamID); err != nil {
+		if err = s.userRepo.UpsertUser(ctx, tx, user.UserID, user.Username, user.IsActive); err != nil {
 			return fmt.Errorf("failed to upsert user: %w", err)
+		}
+
+		if err = s.teamRepo.InsertTeamLinkWithUser(ctx, tx, teamID, user.UserID); err != nil {
+			return fmt.Errorf("failed to insert team link: %w", err)
 		}
 	}
 
