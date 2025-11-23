@@ -1,14 +1,15 @@
 package repository
 
 import (
-	"avito-test-assignment/internal/apperrors"
-	"avito-test-assignment/internal/model"
 	"context"
 	"errors"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"avito-test-assignment/internal/apperrors"
+	"avito-test-assignment/internal/model"
 )
 
 type PullRequestRepository struct {
@@ -125,7 +126,7 @@ func (r *PullRequestRepository) SetReviewers(ctx context.Context, ext RepoExtens
 
 	defer rows.Close()
 
-	var reviewers []string
+	reviewers := make([]string, 0, listDefaultCap)
 
 	for rows.Next() {
 		var id string
@@ -158,7 +159,7 @@ func (r *PullRequestRepository) SelectPullRequestsByUserID(ctx context.Context, 
 
 	defer rows.Close()
 
-	var prs []*model.PullRequest
+	prs := make([]*model.PullRequest, 0, listDefaultCap)
 
 	for rows.Next() {
 		var pr model.PullRequest
