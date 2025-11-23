@@ -16,24 +16,20 @@ services:
       timeout: 5s
       retries: 3
 
-#  avito-test-assignment:
-#    build:
-#      context: .
-#      dockerfile: Dockerfile
-#    container_name: wb-tech-test-assignment
-#    depends_on:
-#      db:
-#        condition: service_healthy
-#      redis:
-#        condition: service_healthy
-#      broker:
-#        condition: service_healthy
-#    ports:
-#      - "8080:8080"
-#    volumes:
-#      - ./config/config.docker.yml:/app/config/config.docker.yml
-#    environment:
-#      CONFIG_PATH: "/app/config/config.docker.yml"
+  avito-test-assignment:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: avito-test-assignment
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./config/config.docker.yml:/app/config/config.docker.yml
+    environment:
+      CONFIG_PATH: "/app/config/config.docker.yml"
 
 volumes:
   postgres_data:
