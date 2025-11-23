@@ -16,6 +16,7 @@ func SetupRouter(
 	cfg *config.Config,
 	teamHdl *handler.TeamHandler,
 	userHdl *handler.UserHandler,
+	pullRequestHdl *handler.PullRequestHandler,
 ) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	gin.DefaultWriter = io.Discard
@@ -36,6 +37,9 @@ func SetupRouter(
 
 	usersGroup := basePath.Group("/users")
 	RegisterUsersRoutes(usersGroup, userHdl)
+
+	prGroup := basePath.Group("/pullRequest")
+	RegisterPRRoutes(prGroup, pullRequestHdl)
 
 	return router
 }

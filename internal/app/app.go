@@ -22,18 +22,21 @@ type App struct {
 }
 
 type Repository struct {
-	UserRepo *repository.UserRepository
-	TeamRepo *repository.TeamRepository
+	UserRepo        *repository.UserRepository
+	TeamRepo        *repository.TeamRepository
+	PullRequestRepo *repository.PullRequestRepository
 }
 
 type Service struct {
-	TeamSvc *service.TeamService
-	UserSvc *service.UserService
+	TeamSvc        *service.TeamService
+	UserSvc        *service.UserService
+	PullRequestSvc *service.PullRequestService
 }
 
 type Handler struct {
-	TeamHdl *handler.TeamHandler
-	UserHdl *handler.UserHandler
+	TeamHdl        *handler.TeamHandler
+	UserHdl        *handler.UserHandler
+	PullRequestHdl *handler.PullRequestHandler
 }
 
 func New(l *zap.Logger, cfg *config.Config) (*App, error) {
@@ -132,9 +135,14 @@ func initRepository(l *zap.Logger, db postgres.Postgres) *Repository {
 
 	l.Debug("Team repository initialized")
 
+	prRepo := repository.NewPullRequestRepository(db.Pool())
+
+	l.Debug("Pull request repository initialized")
+
 	return &Repository{
-		UserRepo: userRepo,
-		TeamRepo: teamRepo,
+		UserRepo:        userRepo,
+		TeamRepo:        teamRepo,
+		PullRequestRepo: prRepo,
 	}
 }
 
@@ -143,13 +151,18 @@ func initService(l *zap.Logger, repo *Repository) *Service {
 
 	l.Debug("Team service initialized")
 
-	userSvc := service.NewUserService(repo.TeamRepo, repo.UserRepo)
+	userSvc := service.NewUserService(repo.TeamRepo, repo.UserRepo, repo.PullRequestRepo)
 
 	l.Debug("User service initialized")
 
+	prSvc := service.NewPullRequestService(repo.PullRequestRepo, repo.UserRepo, repo.TeamRepo)
+
+	l.Debug("Pull request service initialized")
+
 	return &Service{
-		TeamSvc: teamSvc,
-		UserSvc: userSvc,
+		TeamSvc:        teamSvc,
+		UserSvc:        userSvc,
+		PullRequestSvc: prSvc,
 	}
 }
 
@@ -161,14 +174,17 @@ func initHandler(l *zap.Logger, svc *Service) *Handler {
 
 	l.Debug("User handler initialized")
 
+	prHdl := handler.NewPullRequestHandler(l, svc.PullRequestSvc)
+
 	return &Handler{
-		TeamHdl: teamHdl,
-		UserHdl: userHdl,
+		TeamHdl:        teamHdl,
+		UserHdl:        userHdl,
+		PullRequestHdl: prHdl,
 	}
 }
 
 func initHTTPServer(l *zap.Logger, cfg *config.Config, hdl *Handler) server.HTTPServer {
-	router := route.SetupRouter(l, cfg, hdl.TeamHdl, hdl.UserHdl)
+	router := route.SetupRouter(l, cfg, hdl.TeamHdl, hdl.UserHdl, hdl.PullRequestHdl)
 
 	httpServer := server.NewHTTPServer(
 		server.WithAddr(cfg.HTTPServer.Host, cfg.HTTPServer.Port),

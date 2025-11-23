@@ -114,3 +114,29 @@ func (r *TeamRepository) SelectTeamNameByUserID(ctx context.Context, ext RepoExt
 
 	return teamName, nil
 }
+
+func (r *TeamRepository) SelectTeamIDByUserID(ctx context.Context, ext RepoExtension, userID string) (int, error) {
+	if ext == nil {
+		ext = r.db
+	}
+
+	const query = `
+		SELECT t.id
+		FROM teams t
+		JOIN team_lnk tl ON t.id = tl.team_id
+		WHERE tl.user_id = $1;
+
+	`
+
+	var teamID int
+
+	if err := ext.QueryRow(ctx, query, userID).Scan(&teamID); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return 0, apperrors.ErrTeamNotExist
+		}
+
+		return 0, err
+	}
+
+	return teamID, nil
+}

@@ -9,4 +9,7 @@ var (
 	ErrTeamAlreadyExists = errors.New("team already exists")
 
 	ErrUserNotExist = errors.New("user does not exist")
+
+	ErrPullRequestAlreadyExists = errors.New("pull request already exists")
+	ErrPullRequestNotExist      = errors.New("pull request does not exist")
 )

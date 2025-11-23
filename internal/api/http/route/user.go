@@ -8,4 +8,5 @@ import (
 
 func RegisterUsersRoutes(g *gin.RouterGroup, h *handler.UserHandler) {
 	g.POST("/setIsActive", h.SetIsActive)
+	g.GET("/getReview", h.GetReview)
 }

@@ -21,15 +21,23 @@ type UserRepositoryForUser interface {
 	SelectUserByID(ctx context.Context, ext repository.RepoExtension, userID string) (*model.User, error)
 }
 
-type UserService struct {
-	teamRepo TeamRepositoryForUser
-	userRepo UserRepositoryForUser
+type PullRequestRepositoryForUser interface {
+	Pool() *pgxpool.Pool
+
+	SelectPullRequestsByUserID(ctx context.Context, ext repository.RepoExtension, userID string) ([]*model.PullRequest, error)
 }
 
-func NewUserService(teamRepo TeamRepositoryForUser, userRepo UserRepositoryForUser) *UserService {
+type UserService struct {
+	teamRepo        TeamRepositoryForUser
+	userRepo        UserRepositoryForUser
+	pullRequestRepo PullRequestRepositoryForUser
+}
+
+func NewUserService(teamRepo TeamRepositoryForUser, userRepo UserRepositoryForUser, pullRequestRepo PullRequestRepositoryForUser) *UserService {
 	return &UserService{
-		teamRepo: teamRepo,
-		userRepo: userRepo,
+		teamRepo:        teamRepo,
+		userRepo:        userRepo,
+		pullRequestRepo: pullRequestRepo,
 	}
 }
 
@@ -70,5 +78,33 @@ func (s *UserService) SetIsActive(ctx context.Context, userID string, isActive b
 		UserID:   userFull.ID,
 		Username: userFull.Username,
 		IsActive: userFull.IsActive,
+	}, nil
+}
+
+func (s *UserService) GetReview(ctx context.Context, userID string) (*model.GetReviewResponse, error) {
+	_, err := s.userRepo.SelectUserByID(ctx, nil, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to select user: %w", err)
+	}
+
+	prs, err := s.pullRequestRepo.SelectPullRequestsByUserID(ctx, nil, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	prsResponse := make([]model.PullRequestResponse, 0, len(prs))
+
+	for _, pr := range prs {
+		prsResponse = append(prsResponse, model.PullRequestResponse{
+			PullRequestID:   pr.PullRequestID,
+			PullRequestName: pr.PullRequestName,
+			AuthorID:        pr.AuthorID,
+			Status:          pr.Status,
+		})
+	}
+
+	return &model.GetReviewResponse{
+		UserID:       userID,
+		PullRequests: prsResponse,
 	}, nil
 }

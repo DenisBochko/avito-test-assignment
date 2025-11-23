@@ -30,6 +30,10 @@ type ResponseWithUser struct {
 	User *model.UserResponseWithTeamName `json:"user"`
 }
 
+type ResponseWithPR struct {
+	PR *model.PullRequestWithAssignedReviewers `json:"pr"`
+}
+
 func NoMethod(c *gin.Context) {
 	c.JSON(http.StatusMethodNotAllowed, ResponseWithError{
 		Error: ResponseError{
