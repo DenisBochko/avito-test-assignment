@@ -14,6 +14,7 @@ import (
 
 type PullRequestService interface {
 	Create(ctx context.Context, id, name, authorID string) (*model.PullRequestWithAssignedReviewers, error)
+	Merge(ctx context.Context, pullRequestID string) (*model.MergedResponse, error)
 }
 
 type PullRequestHandler struct {
@@ -56,6 +57,47 @@ func (s *PullRequestHandler) Create(c *gin.Context) {
 				Error: ResponseError{
 					Code:    "PR_EXISTS",
 					Message: "PR id already exists",
+				},
+			})
+
+			return
+		}
+
+		c.JSON(http.StatusInternalServerError, ResponseWithError{
+			Error: ResponseError{
+				Code:    "INTERNAL_ERROR",
+				Message: err.Error(),
+			},
+		})
+
+		return
+	}
+
+	c.JSON(http.StatusOK, ResponseWithPR{
+		PR: pr,
+	})
+}
+
+func (s *PullRequestHandler) Merge(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	var req model.MergedRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ResponseWithError{
+			Error: ResponseError{
+				Code:    "BAD_REQUEST",
+				Message: err.Error(),
+			},
+		})
+	}
+
+	pr, err := s.svc.Merge(ctx, req.PullRequestID)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrPullRequestNotExist) {
+			c.JSON(http.StatusNotFound, ResponseWithError{
+				Error: ResponseError{
+					Code:    "NOT_FOUND",
+					Message: "resource not found",
 				},
 			})
 

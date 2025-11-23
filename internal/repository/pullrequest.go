@@ -180,3 +180,59 @@ func (r *PullRequestRepository) SelectPullRequestsByUserID(ctx context.Context, 
 
 	return prs, nil
 }
+
+func (r *PullRequestRepository) MergePullRequest(ctx context.Context, ext RepoExtension, prID string) error {
+	if ext == nil {
+		ext = r.db
+	}
+
+	const query = `
+		UPDATE pull_requests
+		SET status = 'MERGED',
+		    merged_at = now()
+		WHERE pull_request_id = $1
+	`
+
+	cmd, err := ext.Exec(ctx, query, prID)
+	if err != nil {
+		return err
+	}
+
+	if cmd.RowsAffected() == 0 {
+		return apperrors.ErrPullRequestNotExist
+	}
+
+	return err
+}
+
+func (r *PullRequestRepository) GetAssignedReviewers(ctx context.Context, ext RepoExtension, prID string) ([]string, error) {
+	if ext == nil {
+		ext = r.db
+	}
+
+	const query = `
+		SELECT reviewer_id
+		FROM pr_reviewers
+		WHERE pull_request_id = $1
+	`
+
+	rows, err := ext.Query(ctx, query, prID)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	reviewers := make([]string, 0, listDefaultCap)
+
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+
+		reviewers = append(reviewers, id)
+	}
+
+	return reviewers, nil
+}

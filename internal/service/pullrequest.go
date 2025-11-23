@@ -15,6 +15,9 @@ type PullRequestRepositoryForPR interface {
 
 	InsertPullRequest(ctx context.Context, ext repository.RepoExtension, id, name, authorID string) (*model.PullRequest, error)
 	SetReviewers(ctx context.Context, ext repository.RepoExtension, authorID, prID string) ([]string, error)
+	MergePullRequest(ctx context.Context, ext repository.RepoExtension, prID string) error
+	GetAssignedReviewers(ctx context.Context, ext repository.RepoExtension, prID string) ([]string, error)
+	SelectPullRequestByID(ctx context.Context, ext repository.RepoExtension, id string) (*model.PullRequest, error)
 }
 
 type UserRepositoryForPR interface {
@@ -87,5 +90,49 @@ func (s *PullRequestService) Create(ctx context.Context, id, name, authorID stri
 		AuthorID:        pr.AuthorID,
 		Status:          pr.Status,
 		Assigned:        rIDs,
+	}, nil
+}
+
+func (s *PullRequestService) Merge(ctx context.Context, pullRequestID string) (*model.MergedResponse, error) {
+	tx, err := s.pullRequestRepo.Pool().Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	defer func() {
+		if err != nil {
+			if rErr := tx.Rollback(ctx); rErr != nil {
+				err = fmt.Errorf("%w, failed to rollback: %w", err, rErr)
+			}
+		}
+	}()
+
+	if err := s.pullRequestRepo.MergePullRequest(ctx, tx, pullRequestID); err != nil {
+		return nil, fmt.Errorf("failed to merge pull request: %w", err)
+	}
+
+	pr, err := s.pullRequestRepo.SelectPullRequestByID(ctx, tx, pullRequestID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to select pull request by ID: %w", err)
+	}
+
+	reviewers, err := s.pullRequestRepo.GetAssignedReviewers(ctx, tx, pr.PullRequestID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to select assigned reviewers: %w", err)
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return &model.MergedResponse{
+		PullRequestWithAssignedReviewers: model.PullRequestWithAssignedReviewers{
+			PullRequestID:   pr.PullRequestID,
+			PullRequestName: pr.PullRequestName,
+			AuthorID:        pr.AuthorID,
+			Status:          pr.Status,
+			Assigned:        reviewers,
+		},
+		MergedAt: *pr.MergedAt,
 	}, nil
 }

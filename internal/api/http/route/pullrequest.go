@@ -8,4 +8,5 @@ import (
 
 func RegisterPRRoutes(g *gin.RouterGroup, h *handler.PullRequestHandler) {
 	g.POST("/create", h.Create)
+	g.POST("merge", h.Merge)
 }

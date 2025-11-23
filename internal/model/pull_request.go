@@ -43,3 +43,13 @@ type GetReviewResponse struct {
 type GetReviewRequestUserIDParam struct {
 	UserID string `binding:"required" form:"user_id"`
 }
+
+type MergedResponse struct {
+	PullRequestWithAssignedReviewers
+
+	MergedAt time.Time `json:"mergedAt"`
+}
+
+type MergedRequest struct {
+	PullRequestID string `json:"pull_request_id"`
+}

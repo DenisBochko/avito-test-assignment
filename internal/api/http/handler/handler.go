@@ -31,7 +31,7 @@ type ResponseWithUser struct {
 }
 
 type ResponseWithPR struct {
-	PR *model.PullRequestWithAssignedReviewers `json:"pr"`
+	PR any `json:"pr"`
 }
 
 func NoMethod(c *gin.Context) {
