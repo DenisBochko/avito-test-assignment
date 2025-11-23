@@ -1,14 +1,15 @@
 package handler
 
 import (
-	"avito-test-assignment/internal/apperrors"
-	"avito-test-assignment/internal/model"
 	"context"
 	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+
+	"avito-test-assignment/internal/apperrors"
+	"avito-test-assignment/internal/model"
 )
 
 type TeamService interface {

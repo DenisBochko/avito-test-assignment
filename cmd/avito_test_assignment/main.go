@@ -36,7 +36,8 @@ func main() {
 
 	errors := make(chan error)
 
-	application := app.MustNew(ctx, log, cfg)
+	application := app.MustNew(log, cfg)
+
 	defer func() {
 		close(errors)
 

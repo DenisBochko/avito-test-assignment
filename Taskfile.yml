@@ -4,6 +4,7 @@ vars:
   APP_NAME: 'avito-test-assignment'
   APP_PATH_NAME: 'avito_test_assignment'
   CONFIG_PATH: './config/config.template.yml'
+  LINTER_PATH: './.golangci-lint.yml'
   GOLANGCI_LINT_VERSION: 'v2.3.0'
   TASKFILE_VERSION: 'latest'
   GOMIGRATE_VERSION: 'latest'
@@ -45,7 +46,7 @@ tasks:
   lint:
     desc: "Запускает линтер"
     cmds:
-      - golangci-lint run ./...
+      - golangci-lint --config={{.LINTER_PATH}} run ./...
 
   run:
     desc: "Запускает приложение"

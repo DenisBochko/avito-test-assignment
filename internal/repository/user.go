@@ -8,6 +8,8 @@ import (
 	"avito-test-assignment/internal/model"
 )
 
+const userListDefaultCap = 10
+
 type UserRepository struct {
 	db *pgxpool.Pool
 }
@@ -63,7 +65,8 @@ func (r *UserRepository) SelectUsersByTeamID(ctx context.Context, ext RepoExtens
 
 	defer rows.Close()
 
-	var users []model.User
+	users := make([]model.User, 0, userListDefaultCap)
+
 	for rows.Next() {
 		var user model.User
 

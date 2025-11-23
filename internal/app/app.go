@@ -1,22 +1,18 @@
 package app
 
 import (
+	"fmt"
+
+	"go.uber.org/zap"
+
 	"avito-test-assignment/internal/api/http/handler"
 	"avito-test-assignment/internal/api/http/route"
+	"avito-test-assignment/internal/config"
 	"avito-test-assignment/internal/repository"
 	"avito-test-assignment/internal/service"
 	"avito-test-assignment/pkg/postgres"
 	"avito-test-assignment/pkg/server"
-	"context"
-	"fmt"
-	"time"
-
-	"go.uber.org/zap"
-
-	"avito-test-assignment/internal/config"
 )
-
-const defaultTimeout = 15 * time.Second
 
 type App struct {
 	l          *zap.Logger
@@ -38,10 +34,7 @@ type Handler struct {
 	TeamHdl *handler.TeamHandler
 }
 
-func New(ctx context.Context, l *zap.Logger, cfg *config.Config) (*App, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
-	defer cancel()
-
+func New(l *zap.Logger, cfg *config.Config) (*App, error) {
 	db, err := initDB(l, &cfg.Database)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize database: %w", err)
@@ -63,8 +56,8 @@ func New(ctx context.Context, l *zap.Logger, cfg *config.Config) (*App, error) {
 	}, nil
 }
 
-func MustNew(ctx context.Context, l *zap.Logger, cfg *config.Config) *App {
-	app, err := New(ctx, l, cfg)
+func MustNew(l *zap.Logger, cfg *config.Config) *App {
+	app, err := New(l, cfg)
 	if err != nil {
 		panic(err)
 	}
@@ -130,9 +123,11 @@ func initDB(l *zap.Logger, cfg *config.Database) (postgres.Postgres, error) {
 
 func initRepository(l *zap.Logger, db postgres.Postgres) *Repository {
 	userRepo := repository.NewUserRepository(db.Pool())
+
 	l.Debug("User repository initialized")
 
 	teamRepo := repository.NewTeamRepository(db.Pool())
+
 	l.Debug("Team repository initialized")
 
 	return &Repository{
@@ -143,6 +138,7 @@ func initRepository(l *zap.Logger, db postgres.Postgres) *Repository {
 
 func initService(l *zap.Logger, repo *Repository) *Service {
 	teamSvc := service.NewTeamService(repo.TeamRepo, repo.UserRepo)
+
 	l.Debug("Team service initialized")
 
 	return &Service{

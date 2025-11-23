@@ -1,13 +1,14 @@
 package route
 
 import (
-	"avito-test-assignment/internal/api/http/handler"
-	"avito-test-assignment/internal/api/http/middleware"
-	"avito-test-assignment/internal/config"
 	"io"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+
+	"avito-test-assignment/internal/api/http/handler"
+	"avito-test-assignment/internal/api/http/middleware"
+	"avito-test-assignment/internal/config"
 )
 
 func SetupRouter(

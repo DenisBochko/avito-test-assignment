@@ -44,6 +44,7 @@ type postgres struct {
 }
 
 func New(cfg *Config) (postgresDB Postgres, err error) {
+	//nolint:nosprintfhostport
 	connString := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
 		cfg.User,
 		cfg.Password,
@@ -76,7 +77,7 @@ func New(cfg *Config) (postgresDB Postgres, err error) {
 
 	if cfg.Migration.AutoApply {
 		m, err := migrate.New(
-			fmt.Sprintf("file://%s", cfg.Migration.Path),
+			"file://"+cfg.Migration.Path,
 			connString,
 		)
 		if err != nil {
@@ -93,7 +94,6 @@ func New(cfg *Config) (postgresDB Postgres, err error) {
 		if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 			return nil, fmt.Errorf("failed to migrate to database: %w", err)
 		}
-
 	}
 
 	return &postgres{db: pool}, nil
