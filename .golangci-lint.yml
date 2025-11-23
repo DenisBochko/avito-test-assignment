@@ -1,0 +1,176 @@
+version: "2"
+
+run:
+  timeout: 5m
+  relative-path-mode: gomod
+  issues-exit-code: 2
+  tests: true
+  allow-parallel-runners: true
+
+linters:
+  # run all fast linters
+  default: fast
+
+  # from standard linters
+  enable:
+    # --- correctness & bugs ---
+    - govet              # suspicious constructs and common mistakes
+    - staticcheck        # set of rules from static check
+    - errorlint          # find code that can cause problems with the error wrapping scheme
+    - nilerr             # find the code that returns nil even if it checks that the error is not nil
+    - bodyclose          # ensure response bodies are closed
+    - rowserrcheck       # ensure rows.Err() is checked
+    - errcheck           # unchecked errors in Go code
+    - sqlclosecheck      # ensure Rows/Stmt/Conn are closed
+    - noctx              # missing context.Context where expected
+    - contextcheck       # check whether the function uses a non-inherited context
+    - fatcontext         # detects nested contexts in loops and function literals
+    - unused             # unused function parameters
+
+    # --- security ---
+    - gosec              # inspects source code for security problems
+
+    # --- performance & allocation ---
+    - prealloc           # preallocate slices where beneficial
+    - perfsprint         # checks that fmt.Sprintf can be replaced with a faster alternative
+
+    # --- style & readability ---
+    - gocritic           # idioms and potential issues (tuned below)
+    - decorder           # required order of type, const, var and func declarations inside a file
+    - wsl_v5             # add or remove empty lines (new linter)
+    - goconst            # extract duplicated string/int constants
+    - exhaustive         # require exhaustive switch over enums
+    - misspell           # finds commonly misspelled English words
+    - dupword            # finds duplicate words
+    - nosprintfhostport  # check whether the function uses fmt.Sprintf with host:port
+    - importas           # enforce import aliases
+    - loggercheck        # structured logging key/value pairs
+
+    # --- testing discipline ---
+    - testifylint        # proper testify usage
+    - thelper            # t.Helper() in test helpers
+    - tparallel          # correct usage of t.Parallel()
+
+  disable:
+    - wsl                # old whitespace linter (replaced by wsl_v5)
+    - lll                # long lines
+    - funlen             # long functions
+    - testpackage        # force external _test packages
+
+  exclusions:
+    # ignore code generated files
+    generated: lax
+
+    rules:
+      # ignore comments end for swagger annotations
+      - path: internal/api/http/handler
+        linters:
+          - godot
+      - path: cmd/av-c-plane
+        linters:
+          - godot
+
+      # tests are noisy, disable pedantic linters there
+      - path: .*_test\.go$
+        linters:
+          - noctx     # in tests, context propagation is irrelevant
+          - goconst   # duplicated literals in tests are fine
+          - mnd       # magic numbers are common and harmless in tests
+          - dupl      # test cases often look like duplicates by design
+          - gocognit  # high cognitive complexity in tests is tolerated
+
+  settings:
+    # function and package cyclomatic complexity
+    cyclop:
+      max-complexity: 30
+      package-average: 0.0
+
+    # list of acceptable packages
+    depguard:
+      rules:
+        main:
+          list-mode: original
+          allow:
+            # standard lib
+            - "$gostd"
+
+            # prefix of project module
+            - "avito-test-assignment"
+
+    # cognitive complexity of functions
+    gocognit:
+      min-complexity: 35
+
+    # number of methods inside an interface
+    interfacebloat:
+      max: 30
+
+    # configure gocritic with selective rules, not the whole zoo
+    gocritic:
+      enabled-tags: [ diagnostic, performance, style ]
+      disabled-checks:
+        - hugeParam         # allow large params by value if intentional
+        - ifElseChain       # long if/else is not always a crime
+        - commentedOutCode  # commented code is tolerated
+        - captLocal         # no need to scream about ID vs Id locally
+        - dupImport         # go vet already catches this
+        - rangeExprCopy     # covered separately with tuned settings
+        - unnamedResult     # don't force naming of return values (especially bad for channel APIs)
+        - whyNoLint         # don't require "why nolint" essays, it just clutters the code
+      settings:
+        rangeValCopy:
+          sizeThreshold: 512   # only warn on large copies (>512B)
+          skipTestFuncs: true  # don’t bother flagging in tests
+
+        # enforce discipline on //nolint usage
+    nolintlint:
+      require-explanation: false  # allow //nolint without mandatory justification
+      require-specific: true      # forbid blanket //nolint, must target named linter
+
+    # preallocate slices when size is predictable
+    prealloc:
+      simple: true       # catch trivial cases (append in for with known bound)
+      range-loops: true  # suggest make(..., len(slice)) for range loops
+      for-loops: true    # same for classic for i := 0; i < n; i++
+
+    # exhaustive switch rules
+    exhaustive:
+      default-signifies-exhaustive: true  # default case count as exhaustive
+
+    # enforce named field initializers
+    exhaustruct:
+      include: [ ".*" ]           # require explicit struct fields by default
+      exclude: [ "_test\\.go$" ]  # allow short literals in tests
+
+    # repeated literals must be extracted
+    goconst:
+      min-len: 3          # ignore short tokens like "ok"
+      min-occurrences: 3  # trigger only if repeated 3+ times
+
+    # enforce consistent import aliases
+    importas:
+      no-unaliased: false
+      alias:
+        - pkg: github.com/jmoiron/sqlx
+          alias: sqlx
+        - pkg: github.com/sirupsen/logrus
+          alias: logrus
+
+    # spelling checks for comments/identifiers
+    misspell:
+      locale: US
+      # custom dictionary to silence false positives
+      ignore-rules:
+        - someword
+
+formatters:
+  enable:
+    - gofmt  # standard for any golang code
+    - gci    # import grouping/sorting
+  settings:
+    gci:
+      sections:  # import groups order
+        - standard
+        - default
+        - prefix(avito-test-assignment)  # project-local imports
+      no-inline-comments: false

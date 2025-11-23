@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:17
+    container_name: postgres
+    environment:
+      POSTGRES_PASSWORD: "postgres"
+      POSTGRES_USER: "admin"
+      POSTGRES_DB: "avito-test-assignment"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+
+#  avito-test-assignment:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    container_name: wb-tech-test-assignment
+#    depends_on:
+#      db:
+#        condition: service_healthy
+#      redis:
+#        condition: service_healthy
+#      broker:
+#        condition: service_healthy
+#    ports:
+#      - "8080:8080"
+#    volumes:
+#      - ./config/config.docker.yml:/app/config/config.docker.yml
+#    environment:
+#      CONFIG_PATH: "/app/config/config.docker.yml"
+
+volumes:
+  postgres_data:
