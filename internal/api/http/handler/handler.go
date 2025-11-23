@@ -1,10 +1,11 @@
 package handler
 
 import (
-	"avito-test-assignment/internal/model"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
+	"avito-test-assignment/internal/model"
 )
 
 const (

@@ -1,13 +1,13 @@
 package repository
 
 import (
-	"avito-test-assignment/internal/apperrors"
 	"context"
 	"errors"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"avito-test-assignment/internal/apperrors"
 	"avito-test-assignment/internal/model"
 )
 

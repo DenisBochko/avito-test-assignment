@@ -1,12 +1,13 @@
 package service
 
 import (
-	"avito-test-assignment/internal/model"
-	"avito-test-assignment/internal/repository"
 	"context"
 	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"avito-test-assignment/internal/model"
+	"avito-test-assignment/internal/repository"
 )
 
 type TeamRepositoryForUser interface {
