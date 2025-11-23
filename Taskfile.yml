@@ -10,6 +10,7 @@ vars:
   GOMIGRATE_VERSION: 'latest'
   GCI_VERSION: 'latest'
   GOFUMPT_VERSION: 'latest'
+  DEFAULT_BASE_URL: "http://localhost:8080"
 
 tasks:
   install-formatters:
@@ -57,3 +58,10 @@ tasks:
     desc: "Собирает приложение"
     cmds:
       - go build -o ./bin/{{.APP_NAME}} ./cmd/{{.APP_PATH_NAME}}
+
+  test:e2e:
+    desc: "Запускает e2e тесты"
+    env:
+      BASE_URL: "{{.BASE_URL}}"
+    cmds:
+      - go test ./cmd/e2e_test/ -v

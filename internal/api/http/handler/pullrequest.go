@@ -74,7 +74,7 @@ func (s *PullRequestHandler) Create(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, ResponseWithPR{
+	c.JSON(http.StatusCreated, ResponseWithPR{
 		PR: pr,
 	})
 }
