@@ -236,3 +236,135 @@ func (r *PullRequestRepository) GetAssignedReviewers(ctx context.Context, ext Re
 
 	return reviewers, nil
 }
+
+func (r *PullRequestRepository) GetPRStatus(ctx context.Context, ext RepoExtension, prID string) (string, error) {
+	if ext == nil {
+		ext = r.db
+	}
+
+	const query = `
+		SELECT status 
+		FROM pull_requests 
+		WHERE pull_request_id = $1
+	`
+
+	var status string
+
+	err := ext.QueryRow(ctx, query, prID).Scan(&status)
+	if err != nil {
+		return "", err
+	}
+
+	return status, nil
+}
+
+func (r *PullRequestRepository) GetReviewerCandidates(ctx context.Context, ext RepoExtension, oldReviewerID, prID string) ([]string, error) {
+	if ext == nil {
+		ext = r.db
+	}
+
+	const query = `
+        WITH old_team AS (
+            SELECT team_id
+            FROM team_lnk
+            WHERE user_id = $1
+        )
+
+        SELECT u.id AS reviewer_id
+        FROM team_lnk tl
+        JOIN users u ON u.id = tl.user_id
+        LEFT JOIN pr_reviewers prr2 ON prr2.reviewer_id = u.id
+        LEFT JOIN pull_requests pr2 ON pr2.pull_request_id = prr2.pull_request_id
+             AND pr2.status = 'OPEN'
+        WHERE tl.team_id IN (SELECT team_id FROM old_team)
+          AND u.id <> $1
+          AND u.is_active = true
+          AND u.id NOT IN (
+              SELECT reviewer_id
+              FROM pr_reviewers
+              WHERE pull_request_id = $2
+          )
+        GROUP BY u.id
+        ORDER BY COUNT(pr2.pull_request_id) ASC;
+    `
+
+	rows, err := ext.Query(ctx, query, oldReviewerID, prID)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	list := make([]string, 0, listDefaultCap)
+
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+
+		list = append(list, id)
+	}
+
+	return list, nil
+}
+
+func (r *PullRequestRepository) RemoveReviewer(ctx context.Context, ext RepoExtension, prID, reviewerID string) error {
+	if ext == nil {
+		ext = r.db
+	}
+
+	const query = `
+        DELETE FROM pr_reviewers
+        WHERE pull_request_id = $1 
+          AND reviewer_id = $2
+    `
+
+	_, err := ext.Exec(ctx, query, prID, reviewerID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *PullRequestRepository) AddReviewer(ctx context.Context, ext RepoExtension, prID, reviewerID string) error {
+	if ext == nil {
+		ext = r.db
+	}
+
+	const query = `
+        INSERT INTO pr_reviewers (pull_request_id, reviewer_id)
+        VALUES ($1, $2)
+    `
+
+	_, err := ext.Exec(ctx, query, prID, reviewerID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *PullRequestRepository) IsReviewerAssigned(ctx context.Context, ext RepoExtension, prID, reviewerID string) (bool, error) {
+	if ext == nil {
+		ext = r.db
+	}
+
+	const query = `
+        SELECT EXISTS(
+            SELECT 1
+            FROM pr_reviewers
+            WHERE pull_request_id = $1 AND reviewer_id = $2
+        )
+    `
+
+	var exists bool
+
+	err := ext.QueryRow(ctx, query, prID, reviewerID).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
+}

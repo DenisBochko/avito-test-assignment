@@ -53,3 +53,13 @@ type MergedResponse struct {
 type MergedRequest struct {
 	PullRequestID string `json:"pull_request_id"`
 }
+
+type ReassignRequest struct {
+	PullRequestID string `json:"pull_request_id"`
+	OldReviewerID string `json:"old_reviewer_id"`
+}
+
+type ReassignResponse struct {
+	PR         PullRequestWithAssignedReviewers `json:"pr"`
+	ReplacedBy string                           `json:"replaced_by"`
+}

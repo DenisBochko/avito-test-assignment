@@ -15,6 +15,7 @@ import (
 type PullRequestService interface {
 	Create(ctx context.Context, id, name, authorID string) (*model.PullRequestWithAssignedReviewers, error)
 	Merge(ctx context.Context, pullRequestID string) (*model.MergedResponse, error)
+	Reassign(ctx context.Context, pullRequestID, oldReviewerID string) (*model.ReassignResponse, error)
 }
 
 type PullRequestHandler struct {
@@ -117,4 +118,76 @@ func (s *PullRequestHandler) Merge(c *gin.Context) {
 	c.JSON(http.StatusOK, ResponseWithPR{
 		PR: pr,
 	})
+}
+
+func (s *PullRequestHandler) Reassign(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	var req model.ReassignRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ResponseWithError{
+			Error: ResponseError{
+				Code:    "BAD_REQUEST",
+				Message: err.Error(),
+			},
+		})
+	}
+
+	pr, err := s.svc.Reassign(ctx, req.PullRequestID, req.OldReviewerID)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrUserNotExist) || errors.Is(err, apperrors.ErrPullRequestNotExist) {
+			c.JSON(http.StatusNotFound, ResponseWithError{
+				Error: ResponseError{
+					Code:    "NOT_FOUND",
+					Message: "resource not found",
+				},
+			})
+
+			return
+		}
+
+		if errors.Is(err, apperrors.ErrPullRequestAlreadyMerged) {
+			c.JSON(http.StatusConflict, ResponseWithError{
+				Error: ResponseError{
+					Code:    "PR_MERGED",
+					Message: "cannot reassign on merged PR",
+				},
+			})
+
+			return
+		}
+
+		if errors.Is(err, apperrors.ErrUserIsNotAssignedAsReviewer) {
+			c.JSON(http.StatusConflict, ResponseWithError{
+				Error: ResponseError{
+					Code:    "NOT_ASSIGNED",
+					Message: "reviewer is not assigned to this PR",
+				},
+			})
+
+			return
+		}
+
+		if errors.Is(err, apperrors.ErrNoActiveReplacementCandidate) {
+			c.JSON(http.StatusConflict, ResponseWithError{
+				Error: ResponseError{
+					Code:    "NO_CANDIDATE",
+					Message: "no active replacement candidate in team",
+				},
+			})
+
+			return
+		}
+
+		c.JSON(http.StatusInternalServerError, ResponseWithError{
+			Error: ResponseError{
+				Code:    "INTERNAL_ERROR",
+				Message: err.Error(),
+			},
+		})
+
+		return
+	}
+
+	c.JSON(http.StatusOK, pr)
 }
