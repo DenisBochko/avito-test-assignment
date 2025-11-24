@@ -97,6 +97,13 @@ linters:
             # prefix of project module
             - "avito-test-assignment"
 
+            - "github.com/golang-migrate/migrate/v4"
+            - "github.com/jackc/pgx/v5"
+            - "go.uber.org/zap"
+            - "gopkg.in/natefinch/lumberjack.v2"
+            - "github.com/gin-gonic/gin"
+            - "github.com/ilyakaznacheev/cleanenv"
+            - "gopkg.in/yaml.v3"
     # cognitive complexity of functions
     gocognit:
       min-complexity: 35

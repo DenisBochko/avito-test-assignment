@@ -1,0 +1,31 @@
+app:
+  service_name: "avito-test-assignment"
+log:
+  level: "debug"
+  format_json: false
+  rotation:
+    file: "./avito-test-assignment.log"
+    max_size: 10
+    max_backups: 3
+    max_age: 7
+database:
+  host: "127.0.0.1"
+  port: 5432
+  user: "admin"
+  password: "postgres"
+  name: "avito-test-assignment"
+  ssl_mode: "disable"
+  max_conns: 10
+  min_conns: 2
+  migration:
+    path: "./migrations"
+    auto_apply: true
+http_server:
+  host: "127.0.0.1"
+  port: 8080
+  base_path: ""
+  timeout:
+    request: 3s
+    read: 5s
+    write: 5s
+    idle: 5s
