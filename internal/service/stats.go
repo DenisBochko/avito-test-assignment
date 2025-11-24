@@ -1,10 +1,11 @@
 package service
 
 import (
-	"avito-test-assignment/internal/model"
-	"avito-test-assignment/internal/repository"
 	"context"
 	"fmt"
+
+	"avito-test-assignment/internal/model"
+	"avito-test-assignment/internal/repository"
 )
 
 type PullRequestRepositoryForStats interface {

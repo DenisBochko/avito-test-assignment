@@ -1,12 +1,13 @@
 package handler
 
 import (
-	"avito-test-assignment/internal/model"
 	"context"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+
+	"avito-test-assignment/internal/model"
 )
 
 type StatsService interface {
