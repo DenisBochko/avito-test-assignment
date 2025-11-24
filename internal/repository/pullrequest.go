@@ -368,3 +368,70 @@ func (r *PullRequestRepository) IsReviewerAssigned(ctx context.Context, ext Repo
 
 	return exists, nil
 }
+
+func (r *PullRequestRepository) GetReviewerStats(ctx context.Context, ext RepoExtension) ([]model.ReviewerStats, error) {
+	if ext == nil {
+		ext = r.db
+	}
+
+	const query = `
+        SELECT reviewer_id, COUNT(*) AS assigned_count
+        FROM pr_reviewers
+        GROUP BY reviewer_id
+        ORDER BY assigned_count DESC
+    `
+
+	rows, err := ext.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	stats := make([]model.ReviewerStats, 0, listDefaultCap)
+	for rows.Next() {
+		var s model.ReviewerStats
+
+		if err := rows.Scan(&s.ReviewerID, &s.AssignedCount); err != nil {
+			return nil, err
+		}
+
+		stats = append(stats, s)
+	}
+
+	return stats, nil
+}
+
+func (r *PullRequestRepository) GetPRStats(ctx context.Context, ext RepoExtension) ([]model.PRStats, error) {
+	if ext == nil {
+		ext = r.db
+	}
+
+	const query = `
+        SELECT pull_request_id, COUNT(*) AS reviewer_count
+        FROM pr_reviewers
+        GROUP BY pull_request_id
+        ORDER BY reviewer_count DESC
+    `
+
+	rows, err := ext.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	stats := make([]model.PRStats, 0, listDefaultCap)
+
+	for rows.Next() {
+		var s model.PRStats
+
+		if err := rows.Scan(&s.PullRequestID, &s.ReviewerCount); err != nil {
+			return nil, err
+		}
+
+		stats = append(stats, s)
+	}
+
+	return stats, nil
+}

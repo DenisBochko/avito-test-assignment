@@ -31,12 +31,14 @@ type Service struct {
 	TeamSvc        *service.TeamService
 	UserSvc        *service.UserService
 	PullRequestSvc *service.PullRequestService
+	StatsSvc       *service.StatsService
 }
 
 type Handler struct {
 	TeamHdl        *handler.TeamHandler
 	UserHdl        *handler.UserHandler
 	PullRequestHdl *handler.PullRequestHandler
+	StatsHdl       *handler.StatsHandler
 }
 
 func New(l *zap.Logger, cfg *config.Config) (*App, error) {
@@ -159,10 +161,15 @@ func initService(l *zap.Logger, repo *Repository) *Service {
 
 	l.Debug("Pull request service initialized")
 
+	statsSvc := service.NewStatsService(repo.PullRequestRepo)
+
+	l.Debug("Stats service initialized")
+
 	return &Service{
 		TeamSvc:        teamSvc,
 		UserSvc:        userSvc,
 		PullRequestSvc: prSvc,
+		StatsSvc:       statsSvc,
 	}
 }
 
@@ -176,15 +183,22 @@ func initHandler(l *zap.Logger, svc *Service) *Handler {
 
 	prHdl := handler.NewPullRequestHandler(l, svc.PullRequestSvc)
 
+	l.Debug("Pull request handler initialized")
+
+	statsHdl := handler.NewStatsHandler(l, svc.StatsSvc)
+
+	l.Debug("Stats handler initialized")
+
 	return &Handler{
 		TeamHdl:        teamHdl,
 		UserHdl:        userHdl,
 		PullRequestHdl: prHdl,
+		StatsHdl:       statsHdl,
 	}
 }
 
 func initHTTPServer(l *zap.Logger, cfg *config.Config, hdl *Handler) server.HTTPServer {
-	router := route.SetupRouter(l, cfg, hdl.TeamHdl, hdl.UserHdl, hdl.PullRequestHdl)
+	router := route.SetupRouter(l, cfg, hdl.TeamHdl, hdl.UserHdl, hdl.PullRequestHdl, hdl.StatsHdl)
 
 	httpServer := server.NewHTTPServer(
 		server.WithAddr(cfg.HTTPServer.Host, cfg.HTTPServer.Port),
